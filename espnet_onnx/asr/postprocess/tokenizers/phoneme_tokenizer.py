@@ -3,6 +3,7 @@ import re
 import warnings
 from pathlib import Path
 from typing import Iterable, List, Optional, Union
+from packaging.version import parse as V
 
 import g2p_en
 import jamo
@@ -54,11 +55,18 @@ def pyopenjtalk_g2p(text) -> List[str]:
     return phones
 
 
-def pyopenjtalk_g2p_accent(text) -> List[str]:
+def _extract_fullcontext_label(text):
     import pyopenjtalk
 
+    if V(pyopenjtalk.__version__) >= V("0.3.0"):
+        return pyopenjtalk.make_label(pyopenjtalk.run_frontend(text))
+    else:
+        return pyopenjtalk.run_frontend(text)[1]
+
+
+def pyopenjtalk_g2p_accent(text) -> List[str]:
     phones = []
-    for labels in pyopenjtalk.run_frontend(text)[1]:
+    for labels in _extract_fullcontext_label(text):
         p = re.findall(r"\-(.*?)\+.*?\/A:([0-9\-]+).*?\/F:.*?_([0-9]+)", labels)
         if len(p) == 1:
             phones += [p[0][0], p[0][2], p[0][1]]
@@ -66,10 +74,8 @@ def pyopenjtalk_g2p_accent(text) -> List[str]:
 
 
 def pyopenjtalk_g2p_accent_with_pause(text) -> List[str]:
-    import pyopenjtalk
-
     phones = []
-    for labels in pyopenjtalk.run_frontend(text)[1]:
+    for labels in _extract_fullcontext_label(text):
         if labels.split("-")[1].split("+")[0] == "pau":
             phones += ["pau"]
             continue
@@ -108,9 +114,7 @@ def pyopenjtalk_g2p_prosody(text: str, drop_unvoiced_vowels: bool = True) -> Lis
         modeling for neural TTS`: https://doi.org/10.1587/transinf.2020EDP7104
 
     """
-    import pyopenjtalk
-
-    labels = pyopenjtalk.run_frontend(text)[1]
+    labels = _extract_fullcontext_label(text)
     N = len(labels)
 
     phones = []
