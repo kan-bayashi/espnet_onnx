@@ -31,6 +31,10 @@ setup(
     packages=find_packages(include=["espnet_onnx*"]),
     install_requires=requirements["install"],
     tests_require=requirements["test"],
+    include_package_data=True,
+    package_data={
+        "espnet_onnx": ["*.yml"],
+    },
     python_requires=">=3.7.0",
     classifiers=[
         "Programming Language :: Python",
